@@ -1,14 +1,29 @@
-
-
-
 <body style="margin:0">
     <h1 style="text-align:center;">Web3 Pages</h1>
-    <div id="container" style="width:100%; height:100%;">
+    <div id="c" style="width:100%; height:100%;">
 
     </div>
 </body>
 
 <script>
-    let x = 0;
-    fetch()
+    function hex2a(hex) {var s = ''; for(var i=0;i<hex.length;i+=2){var v=parseInt(hex.substr(i,2),16);if(v)s+=String.fromCharCode(v)}return s}
+    fetch("https://moonbase-alpha.blastapi.io/db86d308-8c0c-4f6e-a65c-08ccefcdd194", {
+        method: "post",
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "eth_getTransactionByHash",
+            "params": ["0x941ce686bdba1fafdaaa59d5e07a7edf6d6d5a0f4ccc0a49fce09a599b8ea513"]
+        })
+    })
+        .then((res) => res.json())
+        .then((res) => {
+            let raw = hex2a(res.result.input);
+            console.log(raw);
+            document.getElementById("c").innerHTML = raw;
+        });
 </script>
