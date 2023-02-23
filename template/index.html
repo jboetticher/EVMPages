@@ -1,29 +1,115 @@
-<body style="margin:0">
-    <h1 style="text-align:center;">Web3 Pages</h1>
-    <div id="c" style="width:100%; height:100%;">
-
+<body style="margin:0; font-family:verdana,sans-serif;">
+    <div class="topnav">
+        <h1>Web3 Pages</h1>
+        <button id="b">GO</button>
+        <input id="s" type="text" />
     </div>
+    <iframe id="c" style="width:100%; height:100%;"></iframe>
 </body>
 
+<style>
+    .topnav {
+        overflow: hidden;
+        background-color: #e9e9e9;
+    }
+
+    .topnav h1 {
+        float: left;
+        color: black;
+        padding: 10px;
+        text-decoration: none;
+        font-size: 18px;
+        margin: 0;
+    }
+
+    .topnav p {
+        float: left;
+        font-size: 10px;
+    }
+
+    .topnav button,
+    input {
+        margin-top: 5px;
+        font-size: 17px;
+        padding: 6px;
+        float: right;
+        border: none;
+    }
+
+    .topnav button {
+        margin-right: 16px;
+        background-color: cadetblue;
+        color: white;
+        font-weight: bold;
+    }
+
+    .topnav button:hover {
+        background-color: rgb(110, 182, 185);
+    }
+</style>
+
 <script>
-    function hex2a(hex) {var s = ''; for(var i=0;i<hex.length;i+=2){var v=parseInt(hex.substr(i,2),16);if(v)s+=String.fromCharCode(v)}return s}
-    fetch("https://moonbase-alpha.blastapi.io/db86d308-8c0c-4f6e-a65c-08ccefcdd194", {
-        method: "post",
-        headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            "jsonrpc": "2.0",
-            "id": 1,
-            "method": "eth_getTransactionByHash",
-            "params": ["0x941ce686bdba1fafdaaa59d5e07a7edf6d6d5a0f4ccc0a49fce09a599b8ea513"]
+    function hex2a(hex) { var s = ''; for (var i = 0; i < hex.length; i += 2) { var v = parseInt(hex.substr(i, 2), 16); if (v) s += String.fromCharCode(v) } return s }
+    let a = location.pathname.split('/');
+    let r = /([0-9a-f])+/;
+
+    // Add listener to button
+    document.getElementById("b").addEventListener("click", () => {
+        // Get input
+        let s = document.getElementById("s").value;
+
+        // First ask if it's an address. Then ask if it's a hash. Finally, ask if it's a domain (TODO)
+        let mode = 2;
+        if (s.startsWith('0x') && r.test(s.substr(2))) {
+            if (s.length == 42) mode = 0; // is address
+            else if (s.length == 66) mode = 1; // is hash
+        }
+
+
+        if (mode == 0) {
+            // Interact with contract to get the hash
+        }
+        if (mode == 1) insertPage(s);
+        if (mode == 2) {
+            // Interact with contract to get the hash
+        }
+
+        console.log(mode);
+    });
+
+    // 0x941ce686bdba1fafdaaa59d5e07a7edf6d6d5a0f4ccc0a49fce09a599b8ea513
+
+    function insertPage(txhash) {
+        console.log("Inserting page: " + txhash)
+        fetch("https://moonbase-alpha.blastapi.io/db86d308-8c0c-4f6e-a65c-08ccefcdd194", {
+            method: "post",
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "eth_getTransactionByHash",
+                "params": [txhash]
+            })
         })
-    })
-        .then((res) => res.json())
-        .then((res) => {
-            let raw = hex2a(res.result.input);
-            console.log(raw);
-            document.getElementById("c").innerHTML = raw;
-        });
+            .then((res) => res.json())
+            .then((res) => {
+                let raw = hex2a(res.result.input)
+                replaceIFrame(raw)
+            })
+            .catch((res) => {
+                replaceIFrame('<div style="font-family:verdana;height:100%;width:100%;display:flex;position:fixed;align-items:center;justify-content:center;"><h3 style="font-size:160px;box-shadow:60px 60px 0 cadetblue">404</h3></div>')
+            });
+    }
+
+    function replaceIFrame(inner) {
+        document.getElementById("c").remove();
+        let iframe = document.createElement("iframe");
+        iframe.id = "c";
+        iframe.style = "height:100%;width:100%"
+        document.body.append(iframe);
+        iframe.contentWindow.document.write(inner);
+    }
 </script>
