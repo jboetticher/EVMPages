@@ -1,6 +1,6 @@
 use ethers::{utils, prelude::*};
 use ethers_solc::Solc;
-use std::{path::Path, sync::Arc, env};
+use std::{env};
 
 type Client = SignerMiddleware<Provider<Http>, Wallet<k256::ecdsa::SigningKey>>;
 
@@ -8,10 +8,11 @@ type Client = SignerMiddleware<Provider<Http>, Wallet<k256::ecdsa::SigningKey>>;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let provider: Provider<Http> = Provider::<Http>::try_from("https://rpc.api.moonbase.moonbeam.network")?;
 
-    let key: String = match env::var("PRIVATE_KEY") {
-        Ok(v) => v.clone(),
-        Err(e) => panic!("PRIVATE_KEY environment variable not found! {}", e)
-    };
+    // let key: String = match env::var("PRIVATE_KEY") {
+    //     Ok(v) => v.clone(),
+    //     Err(e) => panic!("PRIVATE_KEY environment variable not found! {}", e)
+    // };
+    let key = "";
 
     let wallet: LocalWallet = key
         .parse::<LocalWallet>()?
@@ -27,7 +28,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 async fn send_transaction(client: &Client) -> Result<(), Box<dyn std::error::Error>> {
     // This is the address of the contract
     let address_to = "0x39b165A3141832198cFCba12Eb86471C53Caa6ab".parse::<Address>()?;
-    let data = "0x3C6469763E54686973206973206120636F6F6C2077656273697465213C2F6469763E".parse::<Bytes>()?;
+    let data = "0x3C646976207374796C653D2277696474683A313030253B6865696768743A313030253B6261636B67726F756E642D636F6C6F723A677265656E3B636F6C6F723A77686974653B223E546869732069732061206D61696E2070616765213C2F6469763E".parse::<Bytes>()?;
 
     println!("data: {}", data);
 

@@ -49,6 +49,8 @@
 </style>
 
 <script>
+    const e = "https://rpc.api.moonbase.moonbeam.network";
+
     function hex2a(hex) { var s = ''; for (var i = 0; i < hex.length; i += 2) { var v = parseInt(hex.substr(i, 2), 16); if (v) s += String.fromCharCode(v) } return s }
     let a = location.pathname.split('/');
     let r = /([0-9a-f])+/;
@@ -66,9 +68,7 @@
         }
 
 
-        if (mode == 0) {
-            // Interact with contract to get the hash
-        }
+        if (mode == 0) addrPage(s);
         if (mode == 1) insertPage(s);
         if (mode == 2) {
             // Interact with contract to get the hash
@@ -78,10 +78,11 @@
     });
 
     // 0x941ce686bdba1fafdaaa59d5e07a7edf6d6d5a0f4ccc0a49fce09a599b8ea513
+    // 0x2b7c2cf9aabdf29e8df7f080ceca472040d5326aacb77589356bf8138c00aaef
 
     function insertPage(txhash) {
         console.log("Inserting page: " + txhash)
-        fetch("https://moonbase-alpha.blastapi.io/db86d308-8c0c-4f6e-a65c-08ccefcdd194", {
+        fetch(e, {
             method: "post",
             headers: {
                 Accept: 'application/json',
@@ -98,6 +99,37 @@
             .then((res) => {
                 let raw = hex2a(res.result.input)
                 replaceIFrame(raw)
+            })
+            .catch((res) => {
+                replaceIFrame('<div style="font-family:verdana;height:100%;width:100%;display:flex;position:fixed;align-items:center;justify-content:center;"><h3 style="font-size:160px;box-shadow:60px 60px 0 cadetblue">404</h3></div>')
+            });
+    }
+
+    function addrPage(a) {
+        fetch(e, {
+            method: "post",
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                jsonrpc: "2.0",
+                id: 1,
+                method: "eth_call",
+                params: [
+                    {
+                        from: "0x0000000000000000000000000000000000000000",
+                        to: "0x8d7472836552769ea97a70af7c60063df10ca683",
+                        data: "0xba5d7bb4000000000000000000000000" + a.substr(2),
+                    },
+                    "latest"
+                ]
+            })
+        })
+            .then((res) => res.json())
+            .then((res) => {
+                console.log(res);
+                insertPage(res.result)
             })
             .catch((res) => {
                 replaceIFrame('<div style="font-family:verdana;height:100%;width:100%;display:flex;position:fixed;align-items:center;justify-content:center;"><h3 style="font-size:160px;box-shadow:60px 60px 0 cadetblue">404</h3></div>')

@@ -31,6 +31,11 @@ contract EVMPages {
         emit MainPageSet(sender, pageId, pages[msg.sender][pageId]);
     }
 
+    // Returns the hash of a user's main page, instead of the int
+    function getMainPageHash(address addr) view external returns(bytes32) {
+        return pages[addr][mainPage[addr]];
+    }
+
     // Declares a page in the smart contract's registry
     function declarePage(bytes32 txHash) external returns(uint256) {
         address sender = msg.sender;
