@@ -80,22 +80,25 @@
     // 0x941ce686bdba1fafdaaa59d5e07a7edf6d6d5a0f4ccc0a49fce09a599b8ea513
     // 0x2b7c2cf9aabdf29e8df7f080ceca472040d5326aacb77589356bf8138c00aaef
 
-    function insertPage(txhash) {
-        console.log("Inserting page: " + txhash)
-        fetch(e, {
+    function rpc(m, p) {
+        return fetch(e, {
             method: "post",
             headers: {
                 Accept: 'application/json',
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                "jsonrpc": "2.0",
-                "id": 1,
-                "method": "eth_getTransactionByHash",
-                "params": [txhash]
+                jsonrpc: "2.0",
+                id: 1,
+                method: m,
+                params: p
             })
         })
             .then((res) => res.json())
+    }
+
+    function insertPage(txhash) {
+        rpc("eth_getTransactionByHash", [txhash])
             .then((res) => {
                 let raw = hex2a(res.result.input)
                 replaceIFrame(raw)
@@ -106,27 +109,14 @@
     }
 
     function addrPage(a) {
-        fetch(e, {
-            method: "post",
-            headers: {
-                Accept: 'application/json',
-                'Content-Type': 'application/json'
+        rpc("eth_call", [
+            {
+                from: "0x0000000000000000000000000000000000000000",
+                to: "0x8d7472836552769ea97a70af7c60063df10ca683",
+                data: "0xba5d7bb4000000000000000000000000" + a.substr(2),
             },
-            body: JSON.stringify({
-                jsonrpc: "2.0",
-                id: 1,
-                method: "eth_call",
-                params: [
-                    {
-                        from: "0x0000000000000000000000000000000000000000",
-                        to: "0x8d7472836552769ea97a70af7c60063df10ca683",
-                        data: "0xba5d7bb4000000000000000000000000" + a.substr(2),
-                    },
-                    "latest"
-                ]
-            })
-        })
-            .then((res) => res.json())
+            "latest"
+        ])
             .then((res) => {
                 console.log(res);
                 insertPage(res.result)
