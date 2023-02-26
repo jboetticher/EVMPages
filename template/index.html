@@ -50,6 +50,8 @@
 
 <script>
     const e = "https://rpc.api.moonbase.moonbeam.network";
+    const f = "0x0000000000000000000000000000000000000000";
+    const t = "0x8d7472836552769ea97a70af7c60063df10ca683";
 
     function hex2a(hex) { var s = ''; for (var i = 0; i < hex.length; i += 2) { var v = parseInt(hex.substr(i, 2), 16); if (v) s += String.fromCharCode(v) } return s }
     let a = location.pathname.split('/');
@@ -61,20 +63,18 @@
         let s = document.getElementById("s").value;
 
         // First ask if it's an address. Then ask if it's a hash. Finally, ask if it's a domain (TODO)
-        let mode = 2;
+        let mode = 100;
         if (s.startsWith('0x') && r.test(s.substr(2))) {
-            if (s.length == 42) mode = 0; // is address
-            else if (s.length == 66) mode = 1; // is hash
+            if (s.length == 42) addrPage(s); // is address
+            else if (s.length == 66) insertPage(s); // is hash
+            else {
+                const sp = s.split(":");
+                if (sp.length == 2 && sp[0].length == 42 && !isNaN(parseInt(sp[1]))) addrSpefPage(sp[0], sp[1]); // is address with number
+            }
         }
-
-
-        if (mode == 0) addrPage(s);
-        if (mode == 1) insertPage(s);
-        if (mode == 2) {
-            // Interact with contract to get the hash
+        else {
+            // is text
         }
-
-        console.log(mode);
     });
 
     // 0x941ce686bdba1fafdaaa59d5e07a7edf6d6d5a0f4ccc0a49fce09a599b8ea513
@@ -97,22 +97,24 @@
             .then((res) => res.json())
     }
 
+    function err() {
+        replaceIFrame('<div style="font-family:verdana;height:100%;width:100%;display:flex;position:fixed;align-items:center;justify-content:center;"><h3 style="font-size:160px;box-shadow:60px 60px 0 cadetblue">404</h3></div>')
+    }
+
     function insertPage(txhash) {
         rpc("eth_getTransactionByHash", [txhash])
             .then((res) => {
                 let raw = hex2a(res.result.input)
                 replaceIFrame(raw)
             })
-            .catch((res) => {
-                replaceIFrame('<div style="font-family:verdana;height:100%;width:100%;display:flex;position:fixed;align-items:center;justify-content:center;"><h3 style="font-size:160px;box-shadow:60px 60px 0 cadetblue">404</h3></div>')
-            });
+            .catch(() => { err() });
     }
 
     function addrPage(a) {
         rpc("eth_call", [
             {
-                from: "0x0000000000000000000000000000000000000000",
-                to: "0x8d7472836552769ea97a70af7c60063df10ca683",
+                from: f,
+                to: t,
                 data: "0xba5d7bb4000000000000000000000000" + a.substr(2),
             },
             "latest"
@@ -121,9 +123,24 @@
                 console.log(res);
                 insertPage(res.result)
             })
-            .catch((res) => {
-                replaceIFrame('<div style="font-family:verdana;height:100%;width:100%;display:flex;position:fixed;align-items:center;justify-content:center;"><h3 style="font-size:160px;box-shadow:60px 60px 0 cadetblue">404</h3></div>')
-            });
+            .catch(() => { err() });
+    }
+
+    function addrSpefPage(a, n) {
+        let h = n.toString(16);
+        rpc("eth_call", [
+            {
+                from: f,
+                to: t,
+                data: "0x9059af78000000000000000000000000" + a.substr(2) + "0".repeat(64-n.length) + h,
+            },
+            "latest"
+        ])
+            .then((res) => {
+                console.log(res);
+                insertPage(res.result)
+            })
+            .catch(() => { err() });
     }
 
     function replaceIFrame(inner) {
