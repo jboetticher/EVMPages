@@ -1,12 +1,18 @@
 use ethers::{utils, prelude::*};
 use ethers_solc::Solc;
 use std::{env};
+use inquire::Select;
 
 type Client = SignerMiddleware<Provider<Http>, Wallet<k256::ecdsa::SigningKey>>;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let provider: Provider<Http> = Provider::<Http>::try_from("https://rpc.api.moonbase.moonbeam.network")?;
+
+    let selection_prompt = Select::new(
+        "What would you like to do?",
+        ["perish", "die"].to_vec()
+    );
 
     // let key: String = match env::var("PRIVATE_KEY") {
     //     Ok(v) => v.clone(),
