@@ -1,6 +1,6 @@
 use ethers::{utils, prelude::*};
 use ethers_solc::Solc;
-use std::{env};
+use std::{env, path::Path};
 use inquire::Select;
 
 type Client = SignerMiddleware<Provider<Http>, Wallet<k256::ecdsa::SigningKey>>;
@@ -9,10 +9,36 @@ type Client = SignerMiddleware<Provider<Http>, Wallet<k256::ecdsa::SigningKey>>;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let provider: Provider<Http> = Provider::<Http>::try_from("https://rpc.api.moonbase.moonbeam.network")?;
 
+    /*
+    1. Publish pages
+    2. Publish packages
+    3. Set main page
+    4. Deploy & verify EVMPages scripts
+    */
     let selection_prompt = Select::new(
         "What would you like to do?",
-        ["perish", "die"].to_vec()
+        [
+            "Publish a page", 
+            "Publish a package", 
+            "Set main page", 
+            "Compile, deploy, and verify contracts"
+        ].to_vec()
     );
+
+    match selection_prompt.raw_prompt()?.index {
+        0 => {
+
+        },
+        1 => {},
+        2 => {},
+        3 => {
+            let source = Path::new(&env!("CARGO_MANIFEST_DIR")). .join("interactor");
+            println!("{:?}", source);
+        },
+        _ => {
+            println!("Error! Selection not valid!");
+        }
+    }
 
     // let key: String = match env::var("PRIVATE_KEY") {
     //     Ok(v) => v.clone(),
@@ -29,6 +55,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
+
+
 
 
 async fn send_transaction(client: &Client) -> Result<(), Box<dyn std::error::Error>> {
@@ -51,11 +79,34 @@ async fn send_transaction(client: &Client) -> Result<(), Box<dyn std::error::Err
     Ok(())
 }
 
-// Print the balance of a wallet
-async fn print_balances(provider: &Provider<Http>) -> Result<(), Box<dyn std::error::Error>> {
-    let address = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045".parse::<Address>()?;
-    let balance = provider.get_balance(address, None).await?;
 
-    println!("{} has {}", address, balance);
-    Ok(())
-}
+// 1. Define an asynchronous function that takes a client provider as input and returns H160
+// async fn compile_deploy_contract(client: &Client) -> Result<H160, Box<dyn std::error::Error>> {
+//     // 2. Define a path as the directory that hosts the smart contracts in the project
+//     let source = Path::new(&env!("CARGO_MANIFEST_DIR")).join("interactor");
+//     println!("{:?}", source);
+
+//     // 3. Compile all of the smart contracts
+//     let compiled = Solc::default()
+//         .compile_source(source)
+//         .expect("Could not compile contracts");
+
+//     // 4. Get ABI & Bytecode for Incrementer.sol
+//     let (abi, bytecode, _runtime_bytecode) = compiled
+//         .find("Incrementer")
+//         .expect("could not find contract")
+//         .into_parts_or_default();
+
+//     // 5. Create a contract factory which will be used to deploy instances of the contract
+//     let factory = ContractFactory::new(abi, bytecode, Arc::new(client.clone()));
+
+//     // 6. Deploy
+//     let contract = factory.deploy(U256::from(5))?.send().await?;
+
+//     // 7. Print out the address
+//     let addr = contract.address();
+//     println!("Incrementer.sol has been deployed to {:?}", addr);
+
+//     // 8. Return the address
+//     Ok(addr)
+// }
