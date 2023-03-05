@@ -1,8 +1,11 @@
-use ethers::{prelude::{*, verify::VerifyContract}, etherscan::Client};
+use dotenvy::dotenv;
+use ethers::{
+    etherscan::Client,
+    prelude::{verify::VerifyContract, *},
+};
 use ethers_solc::Solc;
 use inquire::Select;
 use std::{env, path::Path, sync::Arc};
-use dotenvy::dotenv;
 
 type SignerClient = SignerMiddleware<Provider<Http>, Wallet<k256::ecdsa::SigningKey>>;
 
@@ -12,14 +15,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let key: String = match env::var("PRIVATE_KEY") {
         Ok(v) => v.clone(),
-        Err(e) => panic!("PRIVATE_KEY environment variable not found! {}", e)
+        Err(e) => panic!("PRIVATE_KEY environment variable not found! {}", e),
     };
     let provider = Provider::<Http>::try_from("https://rpc.api.moonbase.moonbeam.network")?;
-    let wallet: LocalWallet = key
-        .parse::<LocalWallet>()?
-        .with_chain_id(Chain::Moonbase);
+    let wallet: LocalWallet = key.parse::<LocalWallet>()?.with_chain_id(Chain::Moonbase);
     let client: SignerClient = SignerMiddleware::new(provider.clone(), wallet.clone());
-    
 
     /*
     1. Publish pages
@@ -33,7 +33,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "Publish a page",
             "Publish a package",
             "Set main page",
-            "Compile, deploy, and verify contracts",
+            "Compile and deploy contracts",
         ]
         .to_vec(),
     );
@@ -108,12 +108,24 @@ async fn compile_deploy_contract(
     // Etherscan client
     // let key: String = match env::var("ETHERSCAN_KEY") {
     //     Ok(v) => v.clone(),
-    //     Err(e) => panic!("ETHERSCAN_KEY environment variable not found! {}", e)
+    //     Err(e) => panic!("ETHERSCAN_KEY environment variable not found! {}", e),
     // };
     // let etherscan = Client::new(Chain::Moonbase, key)?;
 
-    // Verify
-    // VerifyContract::new(addr, "EVMPages".to_string(), "".to_string(), "0.8.18".to_string());
+    // // Verify
+    // let v = VerifyContract::new(
+    //     H160::from_str("0xD158A7B3e9Ef167DF1fc250c014Ae2A0D9acE949"),
+    //     "EVMPages".to_string(),
+    //     "".to_string(),
+    //     "0.8.18".to_string(),
+    // )
+    // .constructor_arguments(Some(""))
+    // .optimization(true)
+    // .runs(200);
+    // etherscan
+    //     .submit_contract_verification(&v)
+    //     .await
+    //     .expect("failed to send the request");
 
     Ok(addr)
 }
