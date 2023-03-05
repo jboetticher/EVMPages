@@ -7,6 +7,9 @@ use ethers_solc::Solc;
 use inquire::Select;
 use std::{env, path::Path, sync::Arc};
 
+mod selector;
+use crate::selector::print_files;
+
 type SignerClient = SignerMiddleware<Provider<Http>, Wallet<k256::ecdsa::SigningKey>>;
 
 #[tokio::main]
@@ -40,7 +43,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let x = selection_prompt.raw_prompt()?.index;
     match x {
-        0 => {}
+        0 => {
+            print_files();
+        }
         1 => {}
         2 => {}
         3 => {
@@ -97,6 +102,9 @@ async fn compile_deploy_contract(
         .expect("could not find contract")
         .into_parts_or_default();
 
+    println!("{:?}", serde_json::to_string(&abi));
+    
+
     let factory = ContractFactory::new(abi, bytecode, Arc::new(client.clone()));
 
     println!("Deploying EVMPages...");
@@ -104,6 +112,8 @@ async fn compile_deploy_contract(
 
     let addr = contract.address();
     println!("EVMPages.sol has been deployed to {:?}", addr);
+
+    // TODO: write to a local file
 
     // Etherscan client
     // let key: String = match env::var("ETHERSCAN_KEY") {
@@ -127,5 +137,10 @@ async fn compile_deploy_contract(
     //     .await
     //     .expect("failed to send the request");
 
-    Ok(addr)
+    // TODO: set landing
+    println!("You should rebuild if any changes to the solidity file was made.");
+
+    todo!();
+
+    // Ok(addr)
 }
