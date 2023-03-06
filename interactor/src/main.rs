@@ -4,9 +4,9 @@ use ethers::{
     prelude::{verify::VerifyContract, *},
 };
 use ethers_solc::Solc;
-use html_minifier::HTMLMinifier;
+use minify_html::{Cfg, minify};
 use inquire::Select;
-use std::{env, path::Path, sync::Arc, fs::{read_to_string, File}, str::from_utf8, io::Write};
+use std::{env, path::Path, sync::Arc, fs::{read, File}, str::from_utf8, io::Write};
 
 mod selector;
 use crate::selector::select_html;
@@ -47,13 +47,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         0 => {
             let dir: &Path = Path::new(&env!("CARGO_MANIFEST_DIR")).parent().unwrap(); 
             let r = select_html(dir)?;
-            let s = read_to_string(r)?;
-            let mut html_minifier = HTMLMinifier::new();
 
-            html_minifier.digest(s)?;
+            // Build minimum file name
+            let mut min_file_name =r.file_stem().unwrap().to_str().unwrap().to_owned();
+            min_file_name.push_str(".min.html");
+            let min_file_name = r.parent().unwrap().join(min_file_name);
 
-            let mut output_file = File::create("test.min.html").unwrap();
-            output_file.write(html_minifier.get_html())?;
+            // Read the code of the file
+            let code = read(r)?;
+
+            // Minify
+            let mut cfg = Cfg::new();
+            cfg.keep_comments = false;
+            cfg.minify_css = true;
+            cfg.minify_js = true;
+            let minified = minify(&code, &cfg);
+
+            // Write to new file
+            let mut min_file = File::create(min_file_name).unwrap();
+            min_file.write(&minified)?;
         }
         1 => {}
         2 => {}
