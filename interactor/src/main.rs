@@ -4,11 +4,12 @@ use ethers::{
     prelude::{verify::VerifyContract, *},
 };
 use ethers_solc::Solc;
+use html_minifier::HTMLMinifier;
 use inquire::Select;
-use std::{env, path::Path, sync::Arc};
+use std::{env, path::Path, sync::Arc, fs::{read_to_string, File}, str::from_utf8, io::Write};
 
 mod selector;
-use crate::selector::print_files;
+use crate::selector::select_html;
 
 type SignerClient = SignerMiddleware<Provider<Http>, Wallet<k256::ecdsa::SigningKey>>;
 
@@ -44,7 +45,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let x = selection_prompt.raw_prompt()?.index;
     match x {
         0 => {
-            print_files();
+            let dir: &Path = Path::new(&env!("CARGO_MANIFEST_DIR")).parent().unwrap(); 
+            let r = select_html(dir)?;
+            let s = read_to_string(r)?;
+            let mut html_minifier = HTMLMinifier::new();
+
+            html_minifier.digest(s)?;
+
+            let mut output_file = File::create("test.min.html").unwrap();
+            output_file.write(html_minifier.get_html())?;
         }
         1 => {}
         2 => {}
