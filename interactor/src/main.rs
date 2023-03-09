@@ -4,9 +4,16 @@ use ethers::{
     prelude::{verify::VerifyContract, *},
 };
 use ethers_solc::Solc;
-use minify_html::{Cfg, minify};
 use inquire::Select;
-use std::{env, path::Path, sync::Arc, fs::{read, File}, str::from_utf8, io::Write};
+use minify_html::{minify, Cfg};
+use toml::Table;
+use std::{
+    env,
+    fs::{read, File, read_to_string},
+    io::{Write, self},
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 mod selector;
 use crate::selector::select_html;
@@ -15,13 +22,20 @@ type SignerClient = SignerMiddleware<Provider<Http>, Wallet<k256::ecdsa::Signing
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Read private key
     dotenv().ok();
-
     let key: String = match env::var("PRIVATE_KEY") {
         Ok(v) => v.clone(),
         Err(e) => panic!("PRIVATE_KEY environment variable not found! {}", e),
     };
-    let provider = Provider::<Http>::try_from("https://rpc.api.moonbase.moonbeam.network")?;
+
+    // Read config file
+    let dir: &Path = Path::new(&env!("CARGO_MANIFEST_DIR")).parent().unwrap();
+    let config_path = dir.join("config.toml");
+    let config = read_to_string(config_path.clone())?.parse::<Table>().unwrap();
+
+    // Construct provider & signer
+    let provider = Provider::<Http>::try_from(config["rpc"].as_str().unwrap())?;
     let wallet: LocalWallet = key.parse::<LocalWallet>()?.with_chain_id(Chain::Moonbase);
     let client: SignerClient = SignerMiddleware::new(provider.clone(), wallet.clone());
 
@@ -45,27 +59,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let x = selection_prompt.raw_prompt()?.index;
     match x {
         0 => {
-            let dir: &Path = Path::new(&env!("CARGO_MANIFEST_DIR")).parent().unwrap(); 
-            let r = select_html(dir)?;
+            let r = select_html(dir.clone())?;
+            let data = minify_html(r)?;
 
-            // Build minimum file name
-            let mut min_file_name =r.file_stem().unwrap().to_str().unwrap().to_owned();
-            min_file_name.push_str(".min.html");
-            let min_file_name = r.parent().unwrap().join(min_file_name);
+            let evm_pages = match config["pages"].as_str() {
+                Some(x) => Ok(x),
+                None => Err("EVMPages deployment configured incorrectly!")
+            };
+            let address_to = evm_pages?.parse::<H160>()?;
 
-            // Read the code of the file
-            let code = read(r)?;
+            // Send transaction
+            let tx = TransactionRequest::new()
+                .to(address_to)
+                .from(client.address())
+                .data(data)
+                .chain_id(1287);
 
-            // Minify
-            let mut cfg = Cfg::new();
-            cfg.keep_comments = false;
-            cfg.minify_css = true;
-            cfg.minify_js = true;
-            let minified = minify(&code, &cfg);
-
-            // Write to new file
-            let mut min_file = File::create(min_file_name).unwrap();
-            min_file.write(&minified)?;
+            let tx = client.send_transaction(tx, None).await?.await?;
         }
         1 => {}
         2 => {}
@@ -73,7 +83,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let p = Path::new(&env!("CARGO_MANIFEST_DIR")).parent();
             let p: &Path = &p.unwrap().join("contracts");
             println!("Searching for contracts at {:?}", p);
-            compile_deploy_contract(&client, p).await?;
+            compile_deploy_contract(&client, p, &config_path).await?;
         }
         _ => {
             println!("Error! Selection not valid!");
@@ -110,9 +120,34 @@ async fn send_transaction(client: &SignerClient) -> Result<(), Box<dyn std::erro
     Ok(())
 }
 
+// Minify HTML
+fn minify_html(r: PathBuf) -> io::Result<Vec<u8>> {
+    // Build minimum file name
+    let mut min_file_name = r.file_stem().unwrap().to_str().unwrap().to_owned();
+    min_file_name.push_str(".min.html");
+    let min_file_name = r.parent().unwrap().join(min_file_name);
+
+    // Read the code of the file
+    let code = read(r)?;
+
+    // Minify
+    let mut cfg = Cfg::new();
+    cfg.keep_comments = false;
+    cfg.minify_css = true;
+    cfg.minify_js = true;
+    let minified = minify(&code, &cfg);
+
+    // Write to new file
+    let mut min_file = File::create(min_file_name).unwrap();
+    min_file.write(&minified)?;
+
+    return Ok(minified);
+}
+
 async fn compile_deploy_contract(
     client: &SignerClient,
     source: &Path,
+    config_path: &PathBuf
 ) -> Result<H160, Box<dyn std::error::Error>> {
     let compiled = Solc::default()
         .compile_source(source)
@@ -124,7 +159,6 @@ async fn compile_deploy_contract(
         .into_parts_or_default();
 
     println!("{:?}", serde_json::to_string(&abi));
-    
 
     let factory = ContractFactory::new(abi, bytecode, Arc::new(client.clone()));
 
