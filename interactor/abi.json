@@ -1,1 +1,393 @@
-[{"type":"constructor","inputs":[]},{"type":"function","name":"INSTRUCTIONS","inputs":[],"outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view"},{"type":"function","name":"LANDING","inputs":[],"outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view"},{"type":"function","name":"declareDomain","inputs":[{"internalType":"string","name":"domain","type":"string"}],"outputs":[],"stateMutability":"payable"},{"type":"function","name":"declarePackage","inputs":[{"internalType":"bytes32","name":"txHash","type":"bytes32"},{"internalType":"string","name":"name","type":"string"}],"outputs":[],"stateMutability":"nonpayable"},{"type":"function","name":"declarePage","inputs":[{"internalType":"bytes32","name":"txHash","type":"bytes32"}],"outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"nonpayable"},{"type":"function","name":"domainOwners","inputs":[{"internalType":"string","name":"","type":"string"}],"outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view"},{"type":"function","name":"domains","inputs":[{"internalType":"string","name":"","type":"string"}],"outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view"},{"type":"function","name":"getMainPageHash","inputs":[{"internalType":"address","name":"addr","type":"address"}],"outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view"},{"type":"function","name":"mainPage","inputs":[{"internalType":"address","name":"","type":"address"}],"outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view"},{"type":"function","name":"owner","inputs":[],"outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view"},{"type":"function","name":"packages","inputs":[{"internalType":"string","name":"","type":"string"}],"outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view"},{"type":"function","name":"pages","inputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"uint256","name":"","type":"uint256"}],"outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view"},{"type":"function","name":"pagesDeclared","inputs":[{"internalType":"address","name":"","type":"address"}],"outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view"},{"type":"function","name":"setDomain","inputs":[{"internalType":"string","name":"domain","type":"string"},{"internalType":"bytes32","name":"txHash","type":"bytes32"}],"outputs":[],"stateMutability":"nonpayable"},{"type":"function","name":"setLanding","inputs":[{"internalType":"bytes32","name":"txHash","type":"bytes32"}],"outputs":[],"stateMutability":"nonpayable"},{"type":"function","name":"setMainPage","inputs":[{"internalType":"uint256","name":"pageId","type":"uint256"}],"outputs":[],"stateMutability":"nonpayable"},{"type":"function","name":"transferDomain","inputs":[{"internalType":"string","name":"domain","type":"string"},{"internalType":"address","name":"recipient","type":"address"}],"outputs":[],"stateMutability":"nonpayable"},{"type":"function","name":"withdraw","inputs":[],"outputs":[],"stateMutability":"nonpayable"},{"type":"event","name":"MainPageSet","inputs":[{"name":"","type":"address","indexed":false},{"name":"","type":"uint256","indexed":false},{"name":"","type":"bytes32","indexed":false}],"anonymous":false},{"type":"event","name":"MainTemplateUpdated","inputs":[{"name":"","type":"bytes32","indexed":false}],"anonymous":false},{"type":"event","name":"NewPageDeclared","inputs":[{"name":"","type":"address","indexed":false},{"name":"","type":"uint256","indexed":false},{"name":"","type":"bytes32","indexed":false}],"anonymous":false},{"type":"event","name":"PotentialNewPageCreated","inputs":[{"name":"","type":"address","indexed":false}],"anonymous":false},{"type":"error","name":"DomainNotOwned","inputs":[]},{"type":"error","name":"OnlyOwnerAllowed","inputs":[]},{"type":"error","name":"PageDoesNotExist","inputs":[]},{"type":"error","name":"PaymentNotEnough","inputs":[]},{"type":"fallback"}]
+[
+    {
+        "type": "constructor",
+        "inputs": []
+    },
+    {
+        "type": "function",
+        "name": "INSTRUCTIONS",
+        "inputs": [],
+        "outputs": [
+            {
+                "internalType": "string",
+                "name": "",
+                "type": "string"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "LANDING",
+        "inputs": [],
+        "outputs": [
+            {
+                "internalType": "bytes32",
+                "name": "",
+                "type": "bytes32"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "declareDomain",
+        "inputs": [
+            {
+                "internalType": "string",
+                "name": "domain",
+                "type": "string"
+            }
+        ],
+        "outputs": [],
+        "stateMutability": "payable"
+    },
+    {
+        "type": "function",
+        "name": "declarePackage",
+        "inputs": [
+            {
+                "internalType": "bytes32",
+                "name": "txHash",
+                "type": "bytes32"
+            },
+            {
+                "internalType": "string",
+                "name": "name",
+                "type": "string"
+            }
+        ],
+        "outputs": [],
+        "stateMutability": "nonpayable"
+    },
+    {
+        "type": "function",
+        "name": "declarePage",
+        "inputs": [
+            {
+                "internalType": "bytes32",
+                "name": "txHash",
+                "type": "bytes32"
+            }
+        ],
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "nonpayable"
+    },
+    {
+        "type": "function",
+        "name": "domainOwners",
+        "inputs": [
+            {
+                "internalType": "string",
+                "name": "",
+                "type": "string"
+            }
+        ],
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "domains",
+        "inputs": [
+            {
+                "internalType": "string",
+                "name": "",
+                "type": "string"
+            }
+        ],
+        "outputs": [
+            {
+                "internalType": "bytes32",
+                "name": "",
+                "type": "bytes32"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "getMainPageHash",
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "addr",
+                "type": "address"
+            }
+        ],
+        "outputs": [
+            {
+                "internalType": "bytes32",
+                "name": "",
+                "type": "bytes32"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "mainPage",
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "owner",
+        "inputs": [],
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "packages",
+        "inputs": [
+            {
+                "internalType": "string",
+                "name": "",
+                "type": "string"
+            }
+        ],
+        "outputs": [
+            {
+                "internalType": "bytes32",
+                "name": "",
+                "type": "bytes32"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "pages",
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "outputs": [
+            {
+                "internalType": "bytes32",
+                "name": "",
+                "type": "bytes32"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "pagesDeclared",
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "setDomain",
+        "inputs": [
+            {
+                "internalType": "string",
+                "name": "domain",
+                "type": "string"
+            },
+            {
+                "internalType": "bytes32",
+                "name": "txHash",
+                "type": "bytes32"
+            }
+        ],
+        "outputs": [],
+        "stateMutability": "nonpayable"
+    },
+    {
+        "type": "function",
+        "name": "setLanding",
+        "inputs": [
+            {
+                "internalType": "bytes32",
+                "name": "txHash",
+                "type": "bytes32"
+            }
+        ],
+        "outputs": [],
+        "stateMutability": "nonpayable"
+    },
+    {
+        "type": "function",
+        "name": "setMainPage",
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "pageId",
+                "type": "uint256"
+            }
+        ],
+        "outputs": [],
+        "stateMutability": "nonpayable"
+    },
+    {
+        "type": "function",
+        "name": "transferDomain",
+        "inputs": [
+            {
+                "internalType": "string",
+                "name": "domain",
+                "type": "string"
+            },
+            {
+                "internalType": "address",
+                "name": "recipient",
+                "type": "address"
+            }
+        ],
+        "outputs": [],
+        "stateMutability": "nonpayable"
+    },
+    {
+        "type": "function",
+        "name": "withdraw",
+        "inputs": [],
+        "outputs": [],
+        "stateMutability": "nonpayable"
+    },
+    {
+        "type": "event",
+        "name": "MainPageSet",
+        "inputs": [
+            {
+                "name": "",
+                "type": "address",
+                "indexed": false
+            },
+            {
+                "name": "",
+                "type": "uint256",
+                "indexed": false
+            },
+            {
+                "name": "",
+                "type": "bytes32",
+                "indexed": false
+            }
+        ],
+        "anonymous": false
+    },
+    {
+        "type": "event",
+        "name": "MainTemplateUpdated",
+        "inputs": [
+            {
+                "name": "",
+                "type": "bytes32",
+                "indexed": false
+            }
+        ],
+        "anonymous": false
+    },
+    {
+        "type": "event",
+        "name": "NewPageDeclared",
+        "inputs": [
+            {
+                "name": "",
+                "type": "address",
+                "indexed": false
+            },
+            {
+                "name": "",
+                "type": "uint256",
+                "indexed": false
+            },
+            {
+                "name": "",
+                "type": "bytes32",
+                "indexed": false
+            }
+        ],
+        "anonymous": false
+    },
+    {
+        "type": "event",
+        "name": "PotentialNewPageCreated",
+        "inputs": [
+            {
+                "name": "",
+                "type": "address",
+                "indexed": false
+            }
+        ],
+        "anonymous": false
+    },
+    {
+        "type": "error",
+        "name": "DomainNotOwned",
+        "inputs": []
+    },
+    {
+        "type": "error",
+        "name": "OnlyOwnerAllowed",
+        "inputs": []
+    },
+    {
+        "type": "error",
+        "name": "PageDoesNotExist",
+        "inputs": []
+    },
+    {
+        "type": "error",
+        "name": "PaymentNotEnough",
+        "inputs": []
+    },
+    {
+        "type": "fallback"
+    }
+]

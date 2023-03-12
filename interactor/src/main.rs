@@ -33,7 +33,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Read config file
     let dir: &Path = Path::new(&env!("CARGO_MANIFEST_DIR"));
     let config_path = dir.join("config.toml");
-    let config = read_to_string(config_path.clone())?.parse::<Table>().unwrap();
+    let config: Table = read_to_string(config_path.clone())?.parse::<Table>()?;
 
     // Construct provider & signer
     let provider = Provider::<Http>::try_from(config["rpc"].as_str().unwrap())?;
@@ -79,12 +79,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 
             // Declare a page
+            println!("Storing page in a transaction...");
             let tx = client.send_transaction(tx, None).await?.await?;
             match tx {
                 Some(t) => {
+                    println!("Page stored: {:?}", format!("{:?}", t.transaction_hash));
+
                     // get address from config
+                    let addr = match config["pages"].as_str() {
+                        Some(a) =>  a.parse::<H160>(),
+                        None => panic!("'pages' address not set!")
+                    }?;
+                    
                     // construct the contract
+                    let contract = EVMPages::new(addr.clone(), Arc::new(client.clone()));
+
                     // write t.transaction_hash in the data
+                    let declared = contract.pages_declared(client.address()).call().await?;
+                    println!("Declaring page...");
+                    contract.declare_page(t.transaction_hash.to_fixed_bytes()).send().await?.await?;
+                    println!("New page declared for address {} with ID {}", client.address(), declared);
                 },
                 None => {
                     println!("There was an error with sending the initial declaration!");
@@ -191,8 +205,6 @@ async fn compile_deploy_contract(
 
     let addr = contract.address();
     println!("EVMPages.sol has been deployed to {:?}", addr);
-
-    let addr = H160::from_str("0x8928cb8cff09682a87275a770879df568dd00c2d")?;
 
     // Edit the TOML file
     let mut config = read_to_string(config_path.clone())?.parse::<Table>().unwrap();
