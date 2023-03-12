@@ -3,11 +3,10 @@ use ethers::prelude::*;
 use ethers_solc::Solc;
 use helpers::publish_html;
 use inquire::Select;
-use minify_html::{minify, Cfg};
 use std::{
     env,
-    fs::{read, read_to_string, File},
-    io::{self, Write},
+    fs::{read_to_string, File},
+    io::{Write},
     path::{Path, PathBuf},
     sync::Arc,
 };
@@ -15,7 +14,10 @@ use toml::Table;
 
 mod helpers;
 mod selector;
-use crate::{helpers::get_addr_in_config, selector::select_html, helpers::SignerClient};
+use crate::{
+    helpers::{get_addr_in_config, SignerClient, minify_html},
+    selector::select_html,
+};
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
@@ -102,64 +104,7 @@ async fn main() -> Result<(), anyhow::Error> {
         }
     }
 
-    // let wallet: LocalWallet = key
-    //     .parse::<LocalWallet>()?
-    //     .with_chain_id(Chain::Moonbase);
-    // let client = SignerMiddleware::new(provider.clone(), wallet.clone());
-
-    // send_transaction(&client).await?;
-
     Ok(())
-}
-
-abigen!(
-    EVMPages,
-    "./abi.json",
-    event_derives(serde::Deserialize, serde::Serialize)
-);
-
-async fn send_transaction(client: &SignerClient) -> Result<(), anyhow::Error> {
-    // This is the address of the contract
-    let address_to = "0x39b165A3141832198cFCba12Eb86471C53Caa6ab".parse::<Address>()?;
-    let data = "0x3C646976207374796C653D2277696474683A313030253B6865696768743A313030253B6261636B67726F756E642D636F6C6F723A677265656E3B636F6C6F723A77686974653B223E546869732069732061206D61696E2070616765213C2F6469763E".parse::<Bytes>()?;
-
-    println!("data: {}", data);
-
-    let tx = TransactionRequest::new()
-        .to(address_to)
-        .from(client.address())
-        .data(data)
-        .chain_id(1287);
-
-    let tx = client.send_transaction(tx, None).await?.await?;
-
-    println!("Transaction Receipt: {}", serde_json::to_string(&tx)?);
-
-    Ok(())
-}
-
-// Minify HTML
-fn minify_html(r: PathBuf) -> io::Result<Vec<u8>> {
-    // Build minimum file name
-    let mut min_file_name = r.file_stem().unwrap().to_str().unwrap().to_owned();
-    min_file_name.push_str(".min.html");
-    let min_file_name = r.parent().unwrap().join(min_file_name);
-
-    // Read the code of the file
-    let code = read(r)?;
-
-    // Minify
-    let mut cfg = Cfg::new();
-    cfg.keep_comments = false;
-    cfg.minify_css = true;
-    cfg.minify_js = true;
-    let minified = minify(&code, &cfg);
-
-    // Write to new file
-    let mut min_file = File::create(min_file_name).unwrap();
-    min_file.write(&minified)?;
-
-    return Ok(minified);
 }
 
 // Compile, deploy, and write down the contract
@@ -232,3 +177,9 @@ async fn compile_deploy_contract(
 
     Ok(addr)
 }
+
+abigen!(
+    EVMPages,
+    "./abi.json",
+    event_derives(serde::Deserialize, serde::Serialize)
+);

@@ -1,4 +1,4 @@
-use std::{fs::{read_dir, DirEntry}, path::{Path, PathBuf}, io, ffi::OsStr};
+use std::{fs::{read_dir}, path::{Path, PathBuf}, io, ffi::OsStr};
 use inquire::Select;
 
 pub fn select_html(dir: &Path) -> io::Result<PathBuf> {
@@ -60,12 +60,12 @@ pub fn select_html(dir: &Path) -> io::Result<PathBuf> {
     }
 }
 
-fn visit_dirs(dir: &Path, cb: &dyn Fn(&DirEntry)) -> io::Result<()> {
-    if dir.is_dir() {
-        for entry in read_dir(dir)? {
-            let entry = entry?;
-            cb(&entry);
-        }
-    }
-    Ok(())
-}
+// fn visit_dirs(dir: &Path, cb: &dyn Fn(&DirEntry)) -> io::Result<()> {
+//     if dir.is_dir() {
+//         for entry in read_dir(dir)? {
+//             let entry = entry?;
+//             cb(&entry);
+//         }
+//     }
+//     Ok(())
+// }
