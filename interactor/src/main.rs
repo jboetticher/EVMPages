@@ -1,28 +1,24 @@
 use dotenvy::dotenv;
-use ethers::{
-    etherscan::Client,
-    prelude::{verify::VerifyContract, *}, abi::AbiEncode,
-};
+use ethers::prelude::*;
 use ethers_solc::Solc;
+use helpers::publish_html;
 use inquire::Select;
 use minify_html::{minify, Cfg};
-use toml::Table;
 use std::{
     env,
-    fs::{read, File, read_to_string},
-    io::{Write, self},
+    fs::{read, read_to_string, File},
+    io::{self, Write},
     path::{Path, PathBuf},
-    sync::Arc, str::FromStr, fmt::write
-
+    sync::Arc,
 };
+use toml::Table;
 
+mod helpers;
 mod selector;
-use crate::selector::select_html;
-
-type SignerClient = SignerMiddleware<Provider<Http>, Wallet<k256::ecdsa::SigningKey>>;
+use crate::{helpers::get_addr_in_config, selector::select_html, helpers::SignerClient};
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Result<(), anyhow::Error> {
     // Read private key
     dotenv().ok();
     let key: String = match env::var("PRIVATE_KEY") {
@@ -63,47 +59,33 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         0 => {
             let r = select_html(dir.clone())?;
             let data = minify_html(r)?;
+            let address_to = get_addr_in_config(&config, "pages")?;
+            let tx = publish_html(client.clone(), address_to, data).await?;
 
-            let evm_pages = match config["pages"].as_str() {
-                Some(x) => Ok(x),
-                None => Err("EVMPages deployment configured incorrectly!")
-            };
-            let address_to = evm_pages?.parse::<H160>()?;
+            println!("Page stored: {:?}", format!("{:?}", tx.transaction_hash));
 
-            // Send transaction
-            let tx = TransactionRequest::new()
-                .to(address_to)
-                .from(client.address())
-                .data(data)
-                .chain_id(1287);
+            // get address from config
+            let addr = match config["pages"].as_str() {
+                Some(a) => a.parse::<H160>(),
+                None => panic!("'pages' address not set!"),
+            }?;
 
+            // construct the contract
+            let contract = EVMPages::new(addr.clone(), Arc::new(client.clone()));
 
-            // Declare a page
-            println!("Storing page in a transaction...");
-            let tx = client.send_transaction(tx, None).await?.await?;
-            match tx {
-                Some(t) => {
-                    println!("Page stored: {:?}", format!("{:?}", t.transaction_hash));
-
-                    // get address from config
-                    let addr = match config["pages"].as_str() {
-                        Some(a) =>  a.parse::<H160>(),
-                        None => panic!("'pages' address not set!")
-                    }?;
-                    
-                    // construct the contract
-                    let contract = EVMPages::new(addr.clone(), Arc::new(client.clone()));
-
-                    // write t.transaction_hash in the data
-                    let declared = contract.pages_declared(client.address()).call().await?;
-                    println!("Declaring page...");
-                    contract.declare_page(t.transaction_hash.to_fixed_bytes()).send().await?.await?;
-                    println!("New page declared for address {} with ID {}", client.address(), declared);
-                },
-                None => {
-                    println!("There was an error with sending the initial declaration!");
-                }
-            }
+            // write t.transaction_hash in the data
+            let declared = contract.pages_declared(client.address()).call().await?;
+            println!("Declaring page...");
+            contract
+                .declare_page(tx.transaction_hash.to_fixed_bytes())
+                .send()
+                .await?
+                .await?;
+            println!(
+                "New page declared for address {} with ID {}",
+                client.address(),
+                declared
+            );
         }
         1 => {}
         2 => {}
@@ -112,7 +94,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let p = Path::new(&env!("CARGO_MANIFEST_DIR")).parent();
             let p: &Path = &p.unwrap().join("contracts");
             println!("Searching for contracts at {:?}", p);
-            compile_deploy_contract(&client, p, &config_path, &dir.clone().join("abi.json")).await?;
+            compile_deploy_contract(&client, p, &config_path, &dir.clone().join("abi.json"))
+                .await?;
         }
         _ => {
             println!("Error! Selection not valid!");
@@ -135,7 +118,7 @@ abigen!(
     event_derives(serde::Deserialize, serde::Serialize)
 );
 
-async fn send_transaction(client: &SignerClient) -> Result<(), Box<dyn std::error::Error>> {
+async fn send_transaction(client: &SignerClient) -> Result<(), anyhow::Error> {
     // This is the address of the contract
     let address_to = "0x39b165A3141832198cFCba12Eb86471C53Caa6ab".parse::<Address>()?;
     let data = "0x3C646976207374796C653D2277696474683A313030253B6865696768743A313030253B6261636B67726F756E642D636F6C6F723A677265656E3B636F6C6F723A77686974653B223E546869732069732061206D61696E2070616765213C2F6469763E".parse::<Bytes>()?;
@@ -179,12 +162,13 @@ fn minify_html(r: PathBuf) -> io::Result<Vec<u8>> {
     return Ok(minified);
 }
 
+// Compile, deploy, and write down the contract
 async fn compile_deploy_contract(
     client: &SignerClient,
     source: &Path,
     config_path: &PathBuf,
-    write_path: &PathBuf
-) -> Result<H160, Box<dyn std::error::Error>> {
+    write_path: &PathBuf,
+) -> Result<H160, anyhow::Error> {
     let compiled = Solc::default()
         .compile_source(source)
         .expect("Could not compile contracts");
@@ -207,11 +191,19 @@ async fn compile_deploy_contract(
     println!("EVMPages.sol has been deployed to {:?}", addr);
 
     // Edit the TOML file
-    let mut config = read_to_string(config_path.clone())?.parse::<Table>().unwrap();
-    config.insert("pages".to_owned(), toml::Value::String(format!("{:?}", addr)));
-    write!(&mut File::create(config_path).unwrap(), "{}", toml::to_string(&config)?)?;
-    
-    
+    let mut config = read_to_string(config_path.clone())?
+        .parse::<Table>()
+        .unwrap();
+    config.insert(
+        "pages".to_owned(),
+        toml::Value::String(format!("{:?}", addr)),
+    );
+    write!(
+        &mut File::create(config_path).unwrap(),
+        "{}",
+        toml::to_string(&config)?
+    )?;
+
     // // Etherscan client
     // let key: String = match env::var("ETHERSCAN_KEY") {
     //     Ok(v) => v.clone(),
@@ -235,7 +227,7 @@ async fn compile_deploy_contract(
     //     .expect("failed to send the request");
 
     // TODO: set landing
-    
+
     println!("You should rebuild if any changes to the solidity file was made.");
 
     Ok(addr)
