@@ -1,7 +1,7 @@
 use dotenvy::dotenv;
 use ethers::{
     etherscan::Client,
-    prelude::{verify::VerifyContract, *},
+    prelude::{verify::VerifyContract, *}, abi::AbiEncode,
 };
 use ethers_solc::Solc;
 use inquire::Select;
@@ -12,7 +12,8 @@ use std::{
     fs::{read, File, read_to_string},
     io::{Write, self},
     path::{Path, PathBuf},
-    sync::Arc,
+    sync::Arc, str::FromStr, fmt::write
+
 };
 
 mod selector;
@@ -30,7 +31,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     // Read config file
-    let dir: &Path = Path::new(&env!("CARGO_MANIFEST_DIR")).parent().unwrap();
+    let dir: &Path = Path::new(&env!("CARGO_MANIFEST_DIR"));
     let config_path = dir.join("config.toml");
     let config = read_to_string(config_path.clone())?.parse::<Table>().unwrap();
 
@@ -58,6 +59,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let x = selection_prompt.raw_prompt()?.index;
     match x {
+        // Publish a page
         0 => {
             let r = select_html(dir.clone())?;
             let data = minify_html(r)?;
@@ -75,15 +77,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .data(data)
                 .chain_id(1287);
 
+
+            // Declare a page
             let tx = client.send_transaction(tx, None).await?.await?;
+            match tx {
+                Some(t) => {
+                    // get address from config
+                    // construct the contract
+                    // write t.transaction_hash in the data
+                },
+                None => {
+                    println!("There was an error with sending the initial declaration!");
+                }
+            }
         }
         1 => {}
         2 => {}
+        // Deploy the smart contract
         3 => {
             let p = Path::new(&env!("CARGO_MANIFEST_DIR")).parent();
             let p: &Path = &p.unwrap().join("contracts");
             println!("Searching for contracts at {:?}", p);
-            compile_deploy_contract(&client, p, &config_path).await?;
+            compile_deploy_contract(&client, p, &config_path, &dir.clone().join("abi.json")).await?;
         }
         _ => {
             println!("Error! Selection not valid!");
@@ -99,6 +114,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
+
+abigen!(
+    EVMPages,
+    "./abi.json",
+    event_derives(serde::Deserialize, serde::Serialize)
+);
 
 async fn send_transaction(client: &SignerClient) -> Result<(), Box<dyn std::error::Error>> {
     // This is the address of the contract
@@ -147,7 +168,8 @@ fn minify_html(r: PathBuf) -> io::Result<Vec<u8>> {
 async fn compile_deploy_contract(
     client: &SignerClient,
     source: &Path,
-    config_path: &PathBuf
+    config_path: &PathBuf,
+    write_path: &PathBuf
 ) -> Result<H160, Box<dyn std::error::Error>> {
     let compiled = Solc::default()
         .compile_source(source)
@@ -158,7 +180,9 @@ async fn compile_deploy_contract(
         .expect("could not find contract")
         .into_parts_or_default();
 
-    println!("{:?}", serde_json::to_string(&abi));
+    // Write to a local file
+    println!("Writing EVMPages to a new ABI...");
+    serde_json::to_writer(&File::create(write_path)?, &abi)?;
 
     let factory = ContractFactory::new(abi, bytecode, Arc::new(client.clone()));
 
@@ -168,9 +192,15 @@ async fn compile_deploy_contract(
     let addr = contract.address();
     println!("EVMPages.sol has been deployed to {:?}", addr);
 
-    // TODO: write to a local file
+    let addr = H160::from_str("0x8928cb8cff09682a87275a770879df568dd00c2d")?;
 
-    // Etherscan client
+    // Edit the TOML file
+    let mut config = read_to_string(config_path.clone())?.parse::<Table>().unwrap();
+    config.insert("pages".to_owned(), toml::Value::String(format!("{:?}", addr)));
+    write!(&mut File::create(config_path).unwrap(), "{}", toml::to_string(&config)?)?;
+    
+    
+    // // Etherscan client
     // let key: String = match env::var("ETHERSCAN_KEY") {
     //     Ok(v) => v.clone(),
     //     Err(e) => panic!("ETHERSCAN_KEY environment variable not found! {}", e),
@@ -193,9 +223,8 @@ async fn compile_deploy_contract(
     //     .expect("failed to send the request");
 
     // TODO: set landing
+    
     println!("You should rebuild if any changes to the solidity file was made.");
 
-    todo!();
-
-    // Ok(addr)
+    Ok(addr)
 }

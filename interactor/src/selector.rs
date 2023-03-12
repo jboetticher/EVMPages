@@ -1,22 +1,7 @@
 use std::{fs::{read_dir, DirEntry}, path::{Path, PathBuf}, io, ffi::OsStr};
 use inquire::Select;
 
-pub fn print_files() {
-    let dir: &Path = Path::new(&env!("CARGO_MANIFEST_DIR")).parent().unwrap();
-    
-    match visit_dirs(dir, &print_dir) {
-        Ok(_) => (),
-        Err(err) => println!("There was an error with visiting directories: {}", err),
-    };
-
-    // Some(dir)
-}
-
-fn print_dir(d: &DirEntry) {
-    println!("{:?}", d.file_name());
-}
-
-pub fn select_html(dir: &Path) -> io::Result<(PathBuf)> {
+pub fn select_html(dir: &Path) -> io::Result<PathBuf> {
     let mut options: Vec<String>;
     let mut paths: Vec<PathBuf>;
 

@@ -1,2 +1,2 @@
-rpc="https://rpc.api.moonbase.moonbeam.network"
-pages="0x12345"
+pages = "0x8928cb8cff09682a87275a770879df568dd00c2d"
+rpc = "https://rpc.api.moonbase.moonbeam.network"
