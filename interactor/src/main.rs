@@ -2,11 +2,11 @@ use dotenvy::dotenv;
 use ethers::prelude::*;
 use ethers_solc::Solc;
 use helpers::publish_html;
-use inquire::Select;
+use inquire::{CustomType, Select, Text};
 use std::{
     env,
     fs::{read_to_string, File},
-    io::{Write},
+    io::Write,
     path::{Path, PathBuf},
     sync::Arc,
 };
@@ -15,7 +15,7 @@ use toml::Table;
 mod helpers;
 mod selector;
 use crate::{
-    helpers::{get_addr_in_config, SignerClient, minify_html},
+    helpers::{get_addr_in_config, minify_html, SignerClient},
     selector::select_html,
 };
 
@@ -59,21 +59,8 @@ async fn main() -> Result<(), anyhow::Error> {
     match x {
         // Publish a page
         0 => {
-            let r = select_html(dir.clone())?;
-            let data = minify_html(r)?;
-            let address_to = get_addr_in_config(&config, "pages")?;
-            let tx = publish_html(client.clone(), address_to, data).await?;
-
-            println!("Page stored: {:?}", format!("{:?}", tx.transaction_hash));
-
-            // get address from config
-            let addr = match config["pages"].as_str() {
-                Some(a) => a.parse::<H160>(),
-                None => panic!("'pages' address not set!"),
-            }?;
-
-            // construct the contract
-            let contract = EVMPages::new(addr.clone(), Arc::new(client.clone()));
+            // Publish the HTML/JS & construct the contract object
+            let (contract, tx) = publish_and_construct_contract(dir, &config, &client).await?;
 
             // write t.transaction_hash in the data
             let declared = contract.pages_declared(client.address()).call().await?;
@@ -89,8 +76,62 @@ async fn main() -> Result<(), anyhow::Error> {
                 declared
             );
         }
-        1 => {}
-        2 => {}
+        // Publish a package
+        1 => {
+            // Publish the HTML/JS & construct the contract object
+            let (contract, tx) = publish_and_construct_contract(dir, &config, &client).await?;
+
+            // get package name
+            let text_prompt = Text::new("Provide a name for the package:");
+            let package_name = text_prompt.prompt()?;
+
+            // write t.transaction_hash in the data
+            println!("Declaring package...");
+            contract
+                .declare_package(tx.transaction_hash.to_fixed_bytes(), package_name.clone())
+                .send()
+                .await?
+                .await?;
+            println!("New package declared with name {}", package_name,);
+        }
+        // Set a main page
+        2 => {
+            // Gets the number of pages that a user has declared
+            let addr = get_addr_in_config(&config, "pages")?;
+            let contract: EVMPagesSigner = EVMPages::new(addr.clone(), Arc::new(client.clone()));
+            let num_declared: u128 = contract
+                .pages_declared(client.address())
+                .call()
+                .await?
+                .as_u128();
+
+            if num_declared > 0 {
+                let mut selection: u128 = u128::MAX;
+                while selection == u128::MAX {
+                    selection = CustomType::new("Provide a value for the main page:")
+                        .with_formatter(&|i: u128| format!("${i}"))
+                        .with_error_message("Please type a valid number")
+                        .prompt()
+                        .unwrap();
+                    if num_declared >= selection {
+                        println!("Please type a number between 0 and {}", selection - 1);
+                        selection = u128::MAX;
+                    }
+                }
+
+                contract
+                    .set_main_page(U256::from(selection))
+                    .send()
+                    .await?
+                    .await?;
+                println!("Main page successfully set.");
+            } else {
+                println!(
+                    "This address {} hasn't declared any pages yet, so a main page cannot be set.",
+                    client.address()
+                );
+            }
+        }
         // Deploy the smart contract
         3 => {
             let p = Path::new(&env!("CARGO_MANIFEST_DIR")).parent();
@@ -105,6 +146,28 @@ async fn main() -> Result<(), anyhow::Error> {
     }
 
     Ok(())
+}
+
+async fn publish_and_construct_contract(
+    dir: &Path,
+    config: &Table,
+    client: &SignerClient,
+) -> Result<(EVMPagesSigner, TransactionReceipt), anyhow::Error> {
+    let r = select_html(dir.clone())?;
+    let data = minify_html(r)?;
+    let address_to = get_addr_in_config(config, "pages")?;
+    let tx = publish_html(client.clone(), address_to, data).await?;
+
+    println!("Page stored: {:?}", format!("{:?}", tx.transaction_hash));
+
+    // get address from config
+    let addr = match config["pages"].as_str() {
+        Some(a) => a.parse::<H160>(),
+        None => panic!("'pages' address not set!"),
+    }?;
+
+    // construct the contract
+    Ok((EVMPages::new(addr.clone(), Arc::new(client.clone())), tx))
 }
 
 // Compile, deploy, and write down the contract
@@ -183,3 +246,5 @@ abigen!(
     "./abi.json",
     event_derives(serde::Deserialize, serde::Serialize)
 );
+
+type EVMPagesSigner = EVMPages<SignerMiddleware<Provider<Http>, Wallet<k256::ecdsa::SigningKey>>>;

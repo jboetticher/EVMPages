@@ -9,6 +9,7 @@ use toml::Table;
 
 pub type SignerClient = SignerMiddleware<Provider<Http>, Wallet<k256::ecdsa::SigningKey>>;
 
+// Gets a value in the config and tries to convert it to an H160
 pub fn get_addr_in_config(config: &Table, config_name: &str) -> Result<H160, anyhow::Error> {
     if let Some(x) = config[config_name].as_str() {
         match x.parse::<H160>() {
@@ -20,6 +21,7 @@ pub fn get_addr_in_config(config: &Table, config_name: &str) -> Result<H160, any
     }
 }
 
+// Sends a transaction to the given address with the calldata of the data given
 pub async fn publish_html(
     client: SignerClient,
     contract_addr: H160,
@@ -41,7 +43,7 @@ pub async fn publish_html(
     }
 }
 
-// Minify HTML
+// Minifies HTML
 pub fn minify_html(r: PathBuf) -> io::Result<Vec<u8>> {
     // Build minimum file name
     let mut min_file_name = r.file_stem().unwrap().to_str().unwrap().to_owned();
