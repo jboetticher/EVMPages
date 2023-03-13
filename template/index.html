@@ -49,9 +49,12 @@
 </style>
 
 <script type="application/javascript">
+    // endpoint: the rpc for the network
     const e = "https://rpc.api.moonbase.moonbeam.network";
+    // from: an address to mark as "from"
     const f = "0x0000000000000000000000000000000000000000";
-    const t = "0x8d7472836552769ea97a70af7c60063df10ca683";
+    // to: the address of the EVMPages contract
+    const t = "0x8928cb8cff09682a87275a770879df568dd00c2d";
 
     function hex2a(hex) { var s = ''; for (var i = 0; i < hex.length; i += 2) { var v = parseInt(hex.substr(i, 2), 16); if (v) s += String.fromCharCode(v) } return s }
     let a = location.pathname.split('/');

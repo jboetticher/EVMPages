@@ -45,6 +45,11 @@ pub async fn publish_html(
 
 // Minifies HTML
 pub fn minify_html(r: PathBuf) -> io::Result<Vec<u8>> {
+    let extension = r.extension().unwrap_or(std::ffi::OsStr::new(""));
+    if extension == "js" {
+        return read(r);
+    }
+
     // Build minimum file name
     let mut min_file_name = r.file_stem().unwrap().to_str().unwrap().to_owned();
     min_file_name.push_str(".min.html");

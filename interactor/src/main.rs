@@ -71,9 +71,10 @@ async fn main() -> Result<(), anyhow::Error> {
                 .await?
                 .await?;
             println!(
-                "New page declared for address {} with ID {}",
+                "New page declared for address {} with ID {} with transaction hash {}",
                 client.address(),
-                declared
+                declared,
+                tx.transaction_hash
             );
         }
         // Publish a package
@@ -92,7 +93,10 @@ async fn main() -> Result<(), anyhow::Error> {
                 .send()
                 .await?
                 .await?;
-            println!("New package declared with name {}", package_name,);
+            println!(
+                "New package declared with name {} and transaction hash {}",
+                package_name, tx.transaction_hash
+            );
         }
         // Set a main page
         2 => {
@@ -104,17 +108,18 @@ async fn main() -> Result<(), anyhow::Error> {
                 .call()
                 .await?
                 .as_u128();
+            println!("You have {} pages declared.", num_declared);
 
             if num_declared > 0 {
                 let mut selection: u128 = u128::MAX;
                 while selection == u128::MAX {
                     selection = CustomType::new("Provide a value for the main page:")
-                        .with_formatter(&|i: u128| format!("${i}"))
+                        .with_formatter(&|i: u128| format!("#{i}"))
                         .with_error_message("Please type a valid number")
                         .prompt()
                         .unwrap();
-                    if num_declared >= selection {
-                        println!("Please type a number between 0 and {}", selection - 1);
+                    if selection >= num_declared {
+                        println!("Please type a number between 0 and {}", num_declared - 1);
                         selection = u128::MAX;
                     }
                 }
