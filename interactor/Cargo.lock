@@ -1725,6 +1725,7 @@ dependencies = [
  "ethers-solc",
  "inquire",
  "minify-html",
+ "osstrtools",
  "serde",
  "serde_json",
  "tokio",
@@ -1736,6 +1737,15 @@ name = "ipnet"
 version = "2.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "30e22bd8629359895450b59ea7a776c850561b96a3b1d31321c1949d9e6c9146"
+
+[[package]]
+name = "itertools"
+version = "0.8.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f56a2d0bc861f9165be4eb3442afd3c236d8a98afd426f65d92324ae1091a484"
+dependencies = [
+ "either",
+]
 
 [[package]]
 name = "itertools"
@@ -1803,7 +1813,7 @@ dependencies = [
  "bit-set",
  "diff",
  "ena",
- "itertools",
+ "itertools 0.10.5",
  "lalrpop-util",
  "petgraph",
  "pico-args",
@@ -2053,6 +2063,15 @@ name = "os_str_bytes"
 version = "6.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9b7820b9daea5457c9f21c69448905d723fbd21136ccf521748f23fd49e723ee"
+
+[[package]]
+name = "osstrtools"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f328dada9eee3ab878d2d367d8bf323c12b20f881c5566ae6e6708b3862dcaba"
+dependencies = [
+ "itertools 0.8.2",
+]
 
 [[package]]
 name = "parity-scale-codec"
@@ -2930,7 +2949,7 @@ version = "0.1.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ac8ac4bfef383f368bd9bb045107a501cd9cd0b64ad1983e1b7e839d6a44ecad"
 dependencies = [
- "itertools",
+ "itertools 0.10.5",
  "lalrpop",
  "lalrpop-util",
  "phf",
@@ -3021,7 +3040,7 @@ dependencies = [
  "hex",
  "home",
  "indicatif",
- "itertools",
+ "itertools 0.10.5",
  "once_cell",
  "rand",
  "reqwest",

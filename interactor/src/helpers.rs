@@ -6,6 +6,7 @@ use std::{
     path::PathBuf,
 };
 use toml::Table;
+use osstrtools::OsStrTools;
 
 pub type SignerClient = SignerMiddleware<Provider<Http>, Wallet<k256::ecdsa::SigningKey>>;
 
@@ -46,7 +47,8 @@ pub async fn publish_html(
 // Minifies HTML
 pub fn minify_html(r: PathBuf) -> io::Result<Vec<u8>> {
     let extension = r.extension().unwrap_or(std::ffi::OsStr::new(""));
-    if extension == "js" || extension == "css" {
+    let name = r.file_name().unwrap_or(std::ffi::OsStr::new(""));
+    if extension == "js" || extension == "css" || name.contains(".min.") {
         return read(r);
     }
 
