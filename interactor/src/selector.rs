@@ -27,7 +27,7 @@ pub fn select_html(dir: &Path) -> io::Result<PathBuf> {
                 Some(name) => {
                     let path_is_dir: bool = path.is_dir();
                     let extension = path.extension().unwrap_or(OsStr::new(""));
-                    if extension == "js" || extension == "html" || path_is_dir {
+                    if extension == "js" || extension == "html" || extension == "css" || path_is_dir {
                         options.push(name.to_string());
                         paths.push(path);
                     }

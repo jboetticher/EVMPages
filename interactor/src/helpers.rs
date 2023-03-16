@@ -46,7 +46,7 @@ pub async fn publish_html(
 // Minifies HTML
 pub fn minify_html(r: PathBuf) -> io::Result<Vec<u8>> {
     let extension = r.extension().unwrap_or(std::ffi::OsStr::new(""));
-    if extension == "js" {
+    if extension == "js" || extension == "css" {
         return read(r);
     }
 
